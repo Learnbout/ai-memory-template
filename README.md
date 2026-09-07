@@ -128,6 +128,13 @@ AI_MEMORY_DIR=/path/to/my-vault python server.py
 调整。改 `server.py` 后记得同步修改 `template/规则/` 与教学文档，让规则与
 实现保持一致。
 
+## 致谢
+
+本项目的结构、规则与代码设计参考了
+[dpkg-s/ai-memory-template](https://github.com/dpkg-s/ai-memory-template)
+的早期版本，感谢原作者 dpkg-s 的贡献。当前仓库由 Learnbout 维护与重构，
+完整名单见 [CONTRIBUTORS.md](CONTRIBUTORS.md)。
+
 ## License
 
 MIT
