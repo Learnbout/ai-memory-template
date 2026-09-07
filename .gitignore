@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.memory.lock
+.DS_Store
+.venv/
+venv/
+.pytest_cache/
+*.tmp

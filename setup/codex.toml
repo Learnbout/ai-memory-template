@@ -1,0 +1,6 @@
+# 示例：把路径替换成你自己的记忆库
+[mcp_servers]
+[mcp_servers.ai-memory]
+command = "/path/to/python"
+args = ["/path/to/ai-memory/server.py"]
+env = { AI_MEMORY_DIR = "/path/to/ai-memory" }

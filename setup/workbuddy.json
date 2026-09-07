@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "ai-memory": {
+      "type": "stdio",
+      "command": "/path/to/python",
+      "args": ["/path/to/ai-memory/server.py"],
+      "env": { "AI_MEMORY_DIR": "/path/to/ai-memory" }
+    }
+  }
+}
