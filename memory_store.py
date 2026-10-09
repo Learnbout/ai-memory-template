@@ -89,6 +89,11 @@ def _folder_for_title(title: str) -> str | None:
         return "项目"
     if title.startswith("规则_"):
         return "规则"
+    # 决策笔记（2026-10-09 主人要求）：单独领域目录，与 日志/项目 平级。
+    # 只加目录路由、**不动 _TYPE_PREFIX_MAP**（type 仍推导为 note）——
+    # type 是 13 字段冻结集成员，新增枚举值会波及 DB/Web 前端，故目录承载语义即可。
+    if title.startswith("决策_"):
+        return "决策"
     if title.startswith("知识_"):
         return "知识"
     if title.startswith("日志_") or re.match(r"^\d{4}-\d{2}-\d{2}", title):

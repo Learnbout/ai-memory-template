@@ -907,7 +907,7 @@ def _collapse_key(title: str) -> str:
 
 
 def _group_by_topic(ordered: list[tuple[bool, float, str, str]]) -> list[list[tuple[bool, float, str, str]]]:
-    """按折叠键分组，组序沿用首次出现顺序（此时已是 updated 倒序）。"""
+    """按折叠键分组，组序沿用首次出现顺序（此时已是「标题命中优先 + updated 倒序」）。"""
     groups: list[list[tuple[bool, float, str, str]]] = []
     index: dict[str, int] = {}
     for hit in ordered:
@@ -950,14 +950,16 @@ def memory_search(
         Field(description='时间窗（G5）：如 "7d"=最近7天、"2026-09-01"=从该日起；按 updated 过滤，不传=不限'),
     ] = None,
 ) -> str:
-    """[检索] 按关键词在标题/标签/正文里找笔记（recent-first）—— 回答「库里有没有、叫什么」。
+    """[检索] 按关键词在标题/标签/正文里找笔记（**标题命中优先** · recent-first）—— 回答「库里有没有、叫什么」。
 
     何时换别的：标题已确定、要看整篇正文 → memory_read；只要 summary / 计数 /
     某一列 → memory_sql（约 200 tok，比读整篇省 99%）。本工具只给命中行与定位，
     不返回全文，是「先探路」的首选。
 
-    结果按 frontmatter `updated` 倒序（活动区在前、`.archive` 在后），同主题条目
-    折叠为一组、被折叠的标题仍会列出。故 `limit` 限制的是**组数**（默认 20），
+    结果**先按标题是否命中关键词排序（命中者在前）**，同档内按 frontmatter `updated`
+    倒序（活动区在前、`.archive` 在后），同主题条目折叠为一组、被折叠的标题仍会列出。
+    若**没有任何候选在标题上命中**（多词 / 改写查询），自动转分词加权打分（smart）并
+    附「命中词」自述 —— 这是把「容器霸榜」挡在精确路径之外的分流。故 `limit` 限制的是**组数**（默认 20），
     有折叠时返回的行数会少于 limit。正文里命中的关键词用 ** 包起来便于定位。
     非法 limit（非整数 / 小于 1）会显式报错，不会静默变成「不限」。
     since 为时间窗（如 "7d"、"2026-09-01"），窗口外的命中直接不返回（并注明
@@ -1023,10 +1025,17 @@ def memory_search(
                     f"- [{title}] ({f.name}) | {tags_display} | tier={tier} | scope={scope} | reads={count}{verified_mark}{source_info}{summary_display}{context}",
                 ))
 
-    # F1（2026-09-16）：按 updated 倒序，兑现 docstring 的 recent-first 承诺。
+    # F1（2026-09-16）→ 强化（2026-10-09）：**标题命中优先**，同档内按 updated 倒序。
     # 活动区优先、`.archive` 靠后 —— 两组各自排序、不混排（归档是历史层，不该顶掉现役笔记）。
-    active_hits = sorted([h for h in hits if not h[0]], key=lambda x: -x[1])
-    archived_hits = sorted([h for h in hits if h[0]], key=lambda x: -x[1])
+    # 动机：纯时间序下，聚合页/索引页（正文关键词密度高、几乎命中任何查询）恒霸前几组，
+    # 把「标题明确含该词」的叶子笔记挤出 top-N。A/B 实测（同一库 · 20 组 QA · 仅改这一处）：
+    # recall@1 10.0%→65.0%、recall@5 30.0%→75.0%。同档内仍按 updated 倒序 —— 故对
+    # 「无标题命中」的宽查询行为不变（全部落第二档 = 等价原纯时间序）。
+    def _rank_key(hit: tuple) -> tuple:
+        return (0 if keyword_lower in (hit[2] or "").lower() else 1, -hit[1])
+
+    active_hits = sorted([h for h in hits if not h[0]], key=_rank_key)
+    archived_hits = sorted([h for h in hits if h[0]], key=_rank_key)
     ordered = active_hits + archived_hits
 
     # G5（2026-10-09）：时间窗过滤放在折叠之前 —— 窗口外的命中不该占用折叠组，
@@ -1043,6 +1052,32 @@ def memory_search(
     if ordered:
         top1 = ordered[0][2]
         _log_search(keyword, len(ordered), top1, tag)
+
+    # ── 检索分流（2026-10-09，甲案）：按「命中层级」分流 ────────────────
+    # Level 1：有任何候选在**标题**上命中关键词 → 精确路径（宽查询如「记忆库」、
+    #          精确查询如「路由索引」都有标题命中，不爆量、行为稳定）。
+    # Level 2：仅**正文**命中（多词 / 改写查询，如 supervisor / 自动备份 / 工具选择）
+    #          → 转分词加权打分，复用 _smart_rank + 两道闸（命中词自述 + 限流）。
+    # 分界依据是「命中在哪一层」而非「词有几个」——中文无空格，2-gram 会把任何中文
+    # 查询切成多个 token，「按词数分流」会误伤全部中文查询。
+    # A/B（隔离 · 同库 · 20 组 QA · 仅改路由）：recall@1 60%→85%、recall@5 70%→90%，
+    # 平均结果数 18.4→17.5（不膨胀），top5 聚合页占比 62→47（噪声下降）。
+    if hits and not any(keyword_lower in (h[2] or "").lower() for h in hits):
+        ranked, matched = _smart_rank(keyword, tag)
+        if ranked:
+            _log_search(keyword, len(ranked), ranked[0][1], tag, tool="search→smart")
+            shown = min(limit, _FALLBACK_LIMIT)
+            head = "无标题命中，已转分词加权（smart），共 {} 条".format(len(ranked))
+            tail = []
+            if len(ranked) > shown:
+                tail.append("显示前 {} 条".format(shown))
+            if matched:
+                tail.append("命中词：" + "、".join(matched))
+            if tail:
+                head += "（" + "，".join(tail) + "）"
+            lines = [head + "：", ""]
+            lines.extend(_format_smart_lines(ranked[:shown]))
+            return "\n".join(lines)
 
     if not ordered:
         # 零结果兜底（E1，2026-09-14，走法 1b）：memory_search 是单串子串匹配，

@@ -347,6 +347,42 @@ async def _main(vault: Path) -> None:
     assert len(list(vault.glob("折叠探针*.md"))) == 3, "折叠不应改动任何文件"
     ms._invalidate_cache()
 
+    # ── 8e. 回归：标题命中优先于纯时间序（2026-10-09，F1 强化）────────────
+    # 加一条 updated 最新但**标题不含关键词**、仅正文命中的笔记（丁），断言它不占首条；
+    # 首条仍应是标题命中里最新的一条（乙）。若排序回退成纯时间序，丁会抢首条 → 变红。
+    ms._atomic_write_text(
+        vault / "丁序探针正文命中.md",
+        '---\ntitle: 丁序探针正文命中\ntags: [probe]\nupdated: "2026-12-01T00:00:00+00:00"\ntier: warm\n---\n\n正文里出现序探针更新时间这个词\n',
+    )
+    ms._invalidate_cache()
+    ranked_t = await text_of("memory_search", keyword="序探针更新时间")
+    first_line_t = next((ln for ln in ranked_t.splitlines() if ln.startswith("- [")), "")
+    assert "乙序探针更新时间" in first_line_t and "丁序探针" not in first_line_t, (
+        f"标题命中未优先于纯时间序（F1 强化失效）：首条应为标题命中的「乙序探针更新时间」，实际 {first_line_t[:80]}"
+    )
+    ms._invalidate_cache()
+
+    # ── 8f. 回归：正文分流（2026-10-09，甲案）────────────────────────────
+    # 「错误路径不会回来」：整串查询词不在任何标题里、但有候选的标题命中其**子 token**
+    # 时，必须转分词打分，且强信号（标题命中）条目排第一 —— 而不是被"仅正文命中"的
+    # 新笔记按时间序抢先。若分流回退成纯精确路径，首条会是仅正文命中的「无关条目」→ 变红。
+    # 注：探针必须让目标在**标题**上命中子 token（如「备份」），否则会撞上 _smart_rank 的
+    # 精度下限（strong_hits==0 且 body_tokens<2 直接丢弃），探针本身失效。
+    ms._atomic_write_text(
+        vault / "备份专题.md",
+        '---\ntitle: 备份专题\ntags: [probe]\nupdated: "2026-06-01T00:00:00+00:00"\ntier: warm\n---\n\n备份相关说明\n',
+    )
+    ms._atomic_write_text(
+        vault / "无关条目.md",
+        '---\ntitle: 无关条目\ntags: [probe]\nupdated: "2026-11-01T00:00:00+00:00"\ntier: warm\n---\n\n这里写着备份机制四个字\n',
+    )
+    ms._invalidate_cache()
+    split = await text_of("memory_search", keyword="备份机制")
+    split_first = next((ln for ln in split.splitlines() if ln.startswith("- [")), "")
+    assert "转分词" in split, f"仅正文命中未走分词分流（甲案失效）：{split[:200]}"
+    assert "备份专题" in split_first, f"分流后未把标题强命中的排首位：{split_first[:100]}"
+    ms._invalidate_cache()
+
     # ── 7. 模块边界断言 ─────────────────────────────────────────────────
     boundary_errors = check_module_boundaries(Path(__file__).parent)
     assert not boundary_errors, boundary_errors
@@ -354,7 +390,7 @@ async def _main(vault: Path) -> None:
     print(
         "smoke ok: core 工具面齐全 | 6 并发写读 | stats | 外部改动可见 | "
         "乐观锁拦截 | 锁残留恢复 | 分词兜底 | 兜底双闸（命中词+限流） | "
-        "updated 倒序（F1） | 同主题折叠且折叠项可见（F2） | 模块边界"
+        "updated 倒序（F1） | 标题命中优先（F1 强化） | 正文分流（甲案） | 同主题折叠且折叠项可见（F2） | 模块边界"
     )
 
 
