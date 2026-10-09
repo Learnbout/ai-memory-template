@@ -29,7 +29,10 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $templateDir = Join-Path $scriptDir "template"
 New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
 Copy-Item "$templateDir\*" -Destination $TargetDir -Recurse -Force
-Copy-Item (Join-Path $scriptDir "server.py") -Destination (Join-Path $TargetDir "server.py") -Force
+foreach ($f in @("server.py","memory_runtime.py","memory_store.py","memory_tools.py","mcp_compat.py","smoke_test.py")) {
+    Copy-Item (Join-Path $scriptDir $f) -Destination (Join-Path $TargetDir $f) -Force
+}
+Copy-Item (Join-Path $scriptDir "脚本") -Destination (Join-Path $TargetDir "脚本") -Recurse -Force
 Write-Host "[OK] 知识库已创建: $TargetDir" -ForegroundColor Green
 
 # 4. Print MCP config snippets

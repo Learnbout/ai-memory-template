@@ -29,7 +29,10 @@ echo "[OK] mcp 已安装"
 # 3. Create the vault
 mkdir -p "$TARGET_DIR"
 cp -R "$TEMPLATE_DIR/." "$TARGET_DIR/"
-cp "$SCRIPT_DIR/server.py" "$TARGET_DIR/server.py"
+for f in server.py memory_runtime.py memory_store.py memory_tools.py mcp_compat.py smoke_test.py; do
+  cp "$SCRIPT_DIR/$f" "$TARGET_DIR/$f"
+done
+cp -R "$SCRIPT_DIR/脚本" "$TARGET_DIR/脚本"
 echo "[OK] 知识库已创建: $TARGET_DIR"
 
 # 4. Print MCP config snippets
