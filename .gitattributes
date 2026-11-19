@@ -1,0 +1,12 @@
+# 统一换行：源码按 LF 存，Windows 脚本按 CRLF（PowerShell 5.1 对 BOM + CRLF 更友好）
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.sh text eol=lf
+
+# 二进制
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

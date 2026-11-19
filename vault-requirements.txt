@@ -1,0 +1,16 @@
+# 记忆库 MCP 服务端的依赖（安装器在装完后端依赖后还要装这一份）
+#
+# 为什么单独一份：`backend/requirements.txt` 是**工作台网页**的依赖（FastAPI 那一套）；
+# 而给 AI 客户端用的 MCP 服务（`vault/server.py`，监听 8770）是**另一个程序**，
+# 它需要 `mcp` SDK。两套混在一起就会出这种事故：
+#   安装器把 `http://127.0.0.1:8770/mcp` 写进各个 AI 客户端的配置，
+#   但那扇门后面根本没程序能起来 —— 用户看到的是「装了、连不上」。
+# 2026-11-19 实测就是这么发现的：opencode 显示 `✗ ai-memory failed`，
+# 手动跑 `python server.py` 报 `ModuleNotFoundError: No module named 'mcp'`。
+#
+# 版本口径：跟本机长期在跑的那套对齐（workbuddy env 实测 mcp 2.3.0）。
+mcp==2.3.0
+mcp-types==2.3.0
+pydantic-settings>=2.0
+# Windows 上 mcp 依赖 pywin32；不写死版本，让它挑当前 Python 对应的那份
+pywin32>=311; sys_platform == "win32"

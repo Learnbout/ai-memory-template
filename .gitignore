@@ -1,0 +1,48 @@
+# 这个仓库只放**代码**。下面这些一律不进版本库。
+
+# ── 你的数据（最重要）────────────────────────────────────────
+# 记忆库本体：库文件、版本库、本地备份
+数据库/
+**/数据库/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+# 你的笔记：**任何人都不要把自己的笔记提到公开仓库**
+*.md
+!README.md
+!DEPLOY.md
+# 凭证与运行时状态
+.workbuddy/
+**/.workbuddy/
+*.key
+*.pem
+.env
+.env.*
+# 后端运行时数据（runs / settings / tasks / 插件 / 日志）
+backend/data/
+**/backend/data/
+*.log
+
+# ── 机器生成的东西 ───────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+.pytest_cache/
+.mypy_cache/
+# 注意：**不要**写全局 `dist/` —— 我们**要**发布 graphite/frontend/dist（预构建产物），
+# 否则用户拿到源码还得先装 Node 才能打开页面。只忽略安装器自己的打包产物。
+installer/dist/
+installer/build/
+installer/payload/
+installer/.venv/
+
+# ── 编辑器 / 系统 ────────────────────────────────────────────
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.bak
+*.bak-*
+*.normbak
