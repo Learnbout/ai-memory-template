@@ -1,4 +1,4 @@
-﻿# Contributors
+# Contributors
 
 感谢所有让这个项目变得更好的人。
 
