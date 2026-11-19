@@ -6,6 +6,11 @@
 
 不用注册，不用上传到别人家，笔记就是一堆普通文件，躺在你自己的硬盘里。
 
+
+> **想直接装？** 不用看源码，去 [Releases](https://github.com/Learnbout/ai-memory-template/releases/latest)
+> 下载安装包（Windows 双击即可，安装包自带运行环境，不用先装 Python）。
+> 源码树里**故意不放 exe** —— 一个包 47 MB，塞进 git 会让仓库越滚越大；Release 才是放二进制的地方。
+
 ---
 
 ## 一、它解决什么问题（说人话）
@@ -50,6 +55,21 @@
 ---
 
 ## 四、怎么装（三种方式，挑一种）
+
+
+### 方式 0 · 直接下载安装包（最省事）
+
+打开 [Releases](https://github.com/Learnbout/ai-memory-template/releases/latest)，下这几个之一：
+
+| 文件 | 什么时候用 |
+|---|---|
+| `ai-memory-installer-local.exe` | 你自己一个人用 |
+| `ai-memory-installer-central.exe` | 和同事一起用（装在一台一直开着的机器上） |
+| `ai-memory-setup-cli.exe` | 给脚本 / 自动化用 |
+| `ai-memory-empty-db-template.zip` | 空的知识库模板（只有表结构，没有任何笔记） |
+| `SHA256SUMS.txt` | 校验下载的文件有没有坏 |
+
+这些 exe 没有代码签名，Windows 可能弹 SmartScreen 提示，点「更多信息 → 仍要运行」即可。
 
 ### 方式 1 · Windows：双击安装包（最省事）
 
