@@ -11,6 +11,7 @@
 *.md
 !README.md
 !DEPLOY.md
+!CONTRIBUTORS.md
 # 凭证与运行时状态
 .workbuddy/
 **/.workbuddy/
